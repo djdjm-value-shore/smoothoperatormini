@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LogIn } from 'lucide-react'
-import { getApiUrl } from '../config'
+import { apiRequest } from '../lib/api'
 
 export function LoginPage() {
   const [passcode, setPasscode] = useState('')
@@ -15,10 +15,9 @@ export function LoginPage() {
     setIsLoading(true)
 
     try {
-      const response = await fetch(getApiUrl('/login'), {
+      const response = await apiRequest('/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        includeSession: false, // No session needed for login
         body: JSON.stringify({ passcode }),
       })
 

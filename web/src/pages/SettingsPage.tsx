@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Settings, Key, MessageSquare } from 'lucide-react'
-import { getApiUrl } from '../config'
+import { apiRequest } from '../lib/api'
 
 export function SettingsPage() {
   const [apiKey, setApiKey] = useState('')
@@ -15,14 +15,8 @@ export function SettingsPage() {
     setIsLoading(true)
 
     try {
-      const sessionId = localStorage.getItem('session_id')
-      const response = await fetch(getApiUrl('/set-key'), {
+      const response = await apiRequest('/set-key', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Session-ID': sessionId || '',
-        },
-        credentials: 'include',
         body: JSON.stringify({ api_key: apiKey }),
       })
 

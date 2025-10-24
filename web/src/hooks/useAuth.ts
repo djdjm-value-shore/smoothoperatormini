@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getApiUrl } from '../config'
+import { apiRequest } from '../lib/api'
 import type { SessionStatus } from '../types'
 
 export function useAuth() {
@@ -9,12 +9,8 @@ export function useAuth() {
 
   const checkAuth = async () => {
     try {
-      const sessionId = localStorage.getItem('session_id')
-      const response = await fetch(getApiUrl('/session-status'), {
-        headers: {
-          'X-Session-ID': sessionId || '',
-        },
-        credentials: 'include',
+      const response = await apiRequest('/session-status', {
+        method: 'GET',
       })
 
       if (response.ok) {
