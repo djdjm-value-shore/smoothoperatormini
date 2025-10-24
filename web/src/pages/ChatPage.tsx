@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Send, Loader2, User, Bot, Wrench } from 'lucide-react'
 import { getFullApiUrl } from '../config'
+import { apiRequest } from '../lib/api'
 import type { ChatMessage, AgentHandoff, ToolCall, ToolResult } from '../types'
 
 export function ChatPage() {
@@ -38,9 +39,14 @@ export function ChatPage() {
     abortControllerRef.current = new AbortController()
 
     try {
+      // Use apiRequest to include session ID header
+      const sessionId = localStorage.getItem('session_id')
       const response = await fetch(getFullApiUrl('/api/chatkit'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-ID': sessionId || '',
+        },
         credentials: 'include',
         body: JSON.stringify({ message: userMessage.content }),
         signal: abortControllerRef.current.signal,
