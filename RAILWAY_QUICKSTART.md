@@ -308,18 +308,23 @@ Prevent unnecessary rebuilds by setting watch paths:
 
 ---
 
-## Step 8: Update Embed Demo (Optional)
+## Step 8: Test Embed Functionality (Required)
 
-Update the static HTML demo file:
+The embed demo is a critical deployment requirement. Test it:
 
-1. Open `smoothoperator-embed-demo.html` in editor
-2. Find the iframe `src` attribute
-3. Replace placeholder with your actual web domain:
-   ```html
-   <iframe src="https://your-web-domain.up.railway.app/chat?embed=1">
-   ```
-4. Save and double-click file to test locally
-5. Chat interface should load in iframe
+1. Open `smoothoperator-embed-demo.html` in browser (already configured with your Railway URL)
+2. You should see the chat interface load in the iframe
+3. Complete the full workflow:
+   - Login with passcode
+   - Set OpenAI API key
+   - Send: "Save a note titled 'test' with content 'hello world'"
+   - Verify handoff: Concierge → Archivist
+   - Send: "List my notes"
+
+**If iframe shows "refused to connect":**
+- nginx is configured with `frame-ancestors *` in CSP to allow embedding
+- If you modified nginx.conf, ensure `X-Frame-Options` header is removed (conflicts with CSP)
+- Redeploy web service after any nginx changes
 
 ---
 
@@ -403,6 +408,29 @@ Update the static HTML demo file:
 - Ensure `SESSION_SECRET` is set in API variables
 - Check browser allows third-party cookies (if using embed)
 - Verify API domain is using HTTPS (Railway default)
+
+### Iframe Embedding Blocked
+
+**Symptom:** `smoothoperator-embed-demo.html` shows "refused to connect" or blank iframe
+
+**Debug:**
+1. Open browser dev tools → Console
+2. Look for errors like:
+   - `"Refused to display in a frame because it set 'X-Frame-Options' to 'SAMEORIGIN'"`
+   - `"violates the following Content Security Policy directive"`
+
+**Fix:**
+1. Check `web/nginx.conf` has NO `X-Frame-Options` header (conflicts with CSP)
+2. Verify CSP includes `frame-ancestors *`:
+   ```nginx
+   add_header Content-Security-Policy "... frame-ancestors *;" always;
+   ```
+3. Commit nginx changes and push
+4. Railway will auto-rebuild web service
+5. Wait for deployment to complete (~3-5 min)
+6. Refresh embed demo page
+
+**Note:** The `frame-ancestors *` directive allows embedding from any domain, which is required for the local HTML demo file to work.
 
 ### Changes Not Deploying
 
