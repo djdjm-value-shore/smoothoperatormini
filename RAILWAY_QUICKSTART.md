@@ -481,9 +481,9 @@ Before considering deployment complete:
 - [ ] Public domains generated for both services
 
 ### Configuration
-- [ ] API: All 4 environment variables set (APP_PASSCODE, SESSION_SECRET, CORS_ORIGINS, LOG_LEVEL)
+- [ ] API: All 4 environment variables set (APP_PASSCODE, SESSION_SECRET, ALLOWED_ORIGINS, LOG_LEVEL)
 - [ ] Web: VITE_API_URL variable set
-- [ ] CORS_ORIGINS matches web domain exactly
+- [ ] ALLOWED_ORIGINS matches web domain exactly
 - [ ] Watch paths configured (optional but recommended)
 
 ### Verification
@@ -772,7 +772,7 @@ railway logs -s api --tail 100
 |----------|---------|----------|
 | APP_PASSCODE | `my-secret-pass` | ✅ |
 | SESSION_SECRET | `[64-char-string]` | ✅ |
-| CORS_ORIGINS | `https://web.up.railway.app` | ✅ |
+| ALLOWED_ORIGINS | `https://web.up.railway.app` | ✅ |
 | LOG_LEVEL | `INFO` | ✅ |
 
 **Web Service:**
