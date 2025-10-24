@@ -322,9 +322,11 @@ The embed demo is a critical deployment requirement. Test it:
    - Send: "List my notes"
 
 **If iframe shows "refused to connect":**
-- nginx is configured with `frame-ancestors *` in CSP to allow embedding
-- If you modified nginx.conf, ensure `X-Frame-Options` header is removed (conflicts with CSP)
+- nginx CSP has NO `frame-ancestors` directive (allows embedding from file:// and any origin)
+- If you modified nginx.conf, ensure `X-Frame-Options` header is removed
 - Redeploy web service after any nginx changes
+
+**Note:** CSP `frame-ancestors *` only allows network schemes (http/https), not file:// protocol used by local HTML files. Omitting the directive removes all embedding restrictions.
 
 ---
 
@@ -421,8 +423,12 @@ The embed demo is a critical deployment requirement. Test it:
 
 **Fix:**
 1. Check `web/nginx.conf` has NO `X-Frame-Options` header (conflicts with CSP)
-2. Verify CSP includes `frame-ancestors *`:
+2. Verify CSP does NOT include `frame-ancestors` directive:
    ```nginx
+   # Correct - no frame-ancestors
+   add_header Content-Security-Policy "default-src 'self'; script-src 'self'; ..." always;
+
+   # Wrong - frame-ancestors * blocks file:// protocol
    add_header Content-Security-Policy "... frame-ancestors *;" always;
    ```
 3. Commit nginx changes and push
@@ -430,7 +436,7 @@ The embed demo is a critical deployment requirement. Test it:
 5. Wait for deployment to complete (~3-5 min)
 6. Refresh embed demo page
 
-**Note:** The `frame-ancestors *` directive allows embedding from any domain, which is required for the local HTML demo file to work.
+**Note:** Omitting `frame-ancestors` allows embedding from any origin including file:// protocol. CSP `frame-ancestors *` only matches network schemes (http/https), which blocks local HTML files.
 
 ### Changes Not Deploying
 
