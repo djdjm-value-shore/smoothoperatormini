@@ -39,17 +39,21 @@ class AgentMessage:
         content: str,
         agent: AgentType | None = None,
         tool_calls: list[dict] | None = None,
+        tool_call_id: str | None = None,
     ):
         self.role = role
         self.content = content
         self.agent = agent
         self.tool_calls = tool_calls or []
+        self.tool_call_id = tool_call_id
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for API calls."""
         result = {"role": self.role, "content": self.content}
         if self.tool_calls:
             result["tool_calls"] = self.tool_calls
+        if self.tool_call_id:
+            result["tool_call_id"] = self.tool_call_id
         return result
 
 
@@ -330,10 +334,12 @@ Be efficient and clear in your note management.""",
                         }
 
                         # Add tool result to history
+                        # Must include tool_call_id for OpenAI API
                         self.conversation_history.append(
                             AgentMessage(
                                 role="tool",
                                 content=json.dumps(result),
+                                tool_call_id=tool_call["id"],
                             )
                         )
 
