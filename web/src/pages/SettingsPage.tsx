@@ -1,16 +1,12 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Settings, Key, MessageSquare } from 'lucide-react'
 import { getApiUrl } from '../config'
-import { useAuth } from '../hooks/useAuth'
 
 export function SettingsPage() {
   const [apiKey, setApiKey] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const navigate = useNavigate()
-  const { refresh } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -30,10 +26,10 @@ export function SettingsPage() {
 
       if (response.ok) {
         setSuccess(true)
-        // Refresh auth state to update hasApiKey
-        await refresh()
+        // Force page navigation to trigger auth re-check
+        // Using window.location instead of navigate() to force reload
         setTimeout(() => {
-          navigate('/chat')
+          window.location.href = '/chat'
         }, 500)
       } else {
         setError(data.detail || 'Failed to set API key')
