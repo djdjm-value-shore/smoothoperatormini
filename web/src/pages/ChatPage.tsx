@@ -90,6 +90,7 @@ export function ChatPage() {
 
             try {
               const eventData = JSON.parse(data)
+              console.log('SSE event:', currentEventType, eventData)
 
               if (currentEventType === 'delta') {
                 // Text streaming
@@ -108,6 +109,7 @@ export function ChatPage() {
                 }
               } else if (currentEventType === 'agent_handoff') {
                 // Visible handoff
+                console.log('Agent handoff:', eventData)
                 setCurrentAgent(eventData.agent)
 
                 const handoffMessage: ChatMessage = {
@@ -117,6 +119,7 @@ export function ChatPage() {
                   timestamp: Date.now(),
                 }
 
+                console.log('Adding handoff message:', handoffMessage)
                 setMessages((prev) => [...prev, handoffMessage])
 
                 // Start new message for new agent
@@ -136,6 +139,7 @@ export function ChatPage() {
                   content: `🔧 Calling ${eventData.tool}(${JSON.stringify(eventData.arguments)})`,
                   timestamp: Date.now(),
                 }
+                console.log('Adding tool call message:', toolMessage)
                 setMessages((prev) => [...prev, toolMessage])
               } else if (currentEventType === 'tool_result') {
                 // Tool result
