@@ -32,8 +32,12 @@ FROM nginx:alpine
 # Copy built files from build stage
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Copy custom nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy nginx config as template (will be processed by entrypoint)
+COPY nginx.conf /etc/nginx/conf.d/default.conf.template
+
+# Copy and make entrypoint script executable
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
 # Expose port (Railway provides $PORT dynamically)
 EXPOSE 80
@@ -42,6 +46,5 @@ EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD wget --quiet --tries=1 --spider http://localhost:${PORT:-80}/ || exit 1
 
-# Start nginx with PORT substitution
-# Railway provides $PORT, default to 80 for local
-CMD sh -c "envsubst '\$PORT' < /etc/nginx/conf.d/default.conf > /tmp/nginx.conf && cat /tmp/nginx.conf > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
+# Use entrypoint script to substitute PORT and start nginx
+ENTRYPOINT ["/docker-entrypoint.sh"]
