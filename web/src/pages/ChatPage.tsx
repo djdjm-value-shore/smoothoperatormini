@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Send, Loader2, User, Bot, Wrench } from 'lucide-react'
 import { getFullApiUrl } from '../config'
-import { apiRequest } from '../lib/api'
-import type { ChatMessage, AgentHandoff, ToolCall, ToolResult } from '../types'
+import type { ChatMessage } from '../types'
 
 export function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
