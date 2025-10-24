@@ -66,6 +66,7 @@ export function ChatPage() {
       }
 
       let messageAdded = false
+      let currentEventType = ''
 
       while (true) {
         const { done, value } = await reader.read()
@@ -75,85 +76,91 @@ export function ChatPage() {
         const lines = chunk.split('\n')
 
         for (const line of lines) {
-          if (!line.trim() || !line.startsWith('data: ')) continue
+          if (!line.trim()) continue
 
-          const data = line.slice(6) // Remove 'data: ' prefix
+          // Parse SSE event type
+          if (line.startsWith('event: ')) {
+            currentEventType = line.slice(7).trim()
+            continue
+          }
 
-          try {
-            const event = JSON.parse(data)
+          // Parse SSE data
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6) // Remove 'data: ' prefix
 
-            if (event.event === 'delta') {
-              // Text streaming
-              currentMessage.content += event.data.content
-              currentMessage.agent = event.data.agent
+            try {
+              const eventData = JSON.parse(data)
 
-              if (!messageAdded) {
-                setMessages((prev) => [...prev, currentMessage])
-                messageAdded = true
-              } else {
-                setMessages((prev) =>
-                  prev.map((msg) =>
-                    msg.id === currentMessage.id ? { ...currentMessage } : msg
+              if (currentEventType === 'delta') {
+                // Text streaming
+                currentMessage.content += eventData.content
+                currentMessage.agent = eventData.agent
+
+                if (!messageAdded) {
+                  setMessages((prev) => [...prev, currentMessage])
+                  messageAdded = true
+                } else {
+                  setMessages((prev) =>
+                    prev.map((msg) =>
+                      msg.id === currentMessage.id ? { ...currentMessage } : msg
+                    )
                   )
-                )
-              }
-            } else if (event.event === 'agent_handoff') {
-              // Visible handoff
-              const handoff: AgentHandoff = event.data
-              setCurrentAgent(handoff.agent)
+                }
+              } else if (currentEventType === 'agent_handoff') {
+                // Visible handoff
+                setCurrentAgent(eventData.agent)
 
-              const handoffMessage: ChatMessage = {
-                id: Date.now().toString() + '-handoff',
-                role: 'system',
-                content: `→ ${handoff.message}`,
-                timestamp: Date.now(),
-              }
+                const handoffMessage: ChatMessage = {
+                  id: Date.now().toString() + '-handoff',
+                  role: 'system',
+                  content: eventData.message,
+                  timestamp: Date.now(),
+                }
 
-              setMessages((prev) => [...prev, handoffMessage])
+                setMessages((prev) => [...prev, handoffMessage])
 
-              // Start new message for new agent
-              currentMessage = {
-                id: Date.now().toString() + '-new',
-                role: 'assistant',
-                content: '',
-                agent: handoff.agent as any,
-                timestamp: Date.now(),
+                // Start new message for new agent
+                currentMessage = {
+                  id: Date.now().toString() + '-new',
+                  role: 'assistant',
+                  content: '',
+                  agent: eventData.agent as any,
+                  timestamp: Date.now(),
+                }
+                messageAdded = false
+              } else if (currentEventType === 'tool_call') {
+                // Tool being called
+                const toolMessage: ChatMessage = {
+                  id: Date.now().toString() + '-tool',
+                  role: 'system',
+                  content: `🔧 Calling ${eventData.tool}(${JSON.stringify(eventData.arguments)})`,
+                  timestamp: Date.now(),
+                }
+                setMessages((prev) => [...prev, toolMessage])
+              } else if (currentEventType === 'tool_result') {
+                // Tool result
+                const resultMessage: ChatMessage = {
+                  id: Date.now().toString() + '-result',
+                  role: 'system',
+                  content: `✓ ${eventData.tool} completed: ${JSON.stringify(eventData.result).slice(0, 100)}`,
+                  timestamp: Date.now(),
+                }
+                setMessages((prev) => [...prev, resultMessage])
+              } else if (currentEventType === 'error') {
+                const errorMessage: ChatMessage = {
+                  id: Date.now().toString() + '-error',
+                  role: 'system',
+                  content: `❌ Error: ${eventData.error}`,
+                  timestamp: Date.now(),
+                }
+                setMessages((prev) => [...prev, errorMessage])
+              } else if (currentEventType === 'done') {
+                // Stream complete
+                console.log('Stream done')
               }
-              messageAdded = false
-            } else if (event.event === 'tool_call') {
-              // Tool being called
-              const toolCall: ToolCall = event.data
-              const toolMessage: ChatMessage = {
-                id: Date.now().toString() + '-tool',
-                role: 'system',
-                content: `🔧 Calling ${toolCall.tool}(${JSON.stringify(toolCall.arguments)})`,
-                timestamp: Date.now(),
-              }
-              setMessages((prev) => [...prev, toolMessage])
-            } else if (event.event === 'tool_result') {
-              // Tool result
-              const toolResult: ToolResult = event.data
-              const resultMessage: ChatMessage = {
-                id: Date.now().toString() + '-result',
-                role: 'system',
-                content: `✓ ${toolResult.tool} completed: ${JSON.stringify(toolResult.result).slice(0, 100)}`,
-                timestamp: Date.now(),
-              }
-              setMessages((prev) => [...prev, resultMessage])
-            } else if (event.event === 'error') {
-              const errorMessage: ChatMessage = {
-                id: Date.now().toString() + '-error',
-                role: 'system',
-                content: `❌ Error: ${event.data.error}`,
-                timestamp: Date.now(),
-              }
-              setMessages((prev) => [...prev, errorMessage])
-            } else if (event.event === 'done') {
-              // Stream complete
-              console.log('Stream done')
+            } catch (err) {
+              console.error('Failed to parse SSE event:', err)
             }
-          } catch (err) {
-            console.error('Failed to parse SSE event:', err)
           }
         }
       }
