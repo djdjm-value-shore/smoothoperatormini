@@ -25,6 +25,10 @@ export function LoginPage() {
       const data = await response.json()
 
       if (response.ok) {
+        // Store session ID in localStorage for cross-domain auth
+        if (data.session_id) {
+          localStorage.setItem('session_id', data.session_id)
+        }
         navigate('/settings')
       } else {
         setError(data.detail || 'Login failed')

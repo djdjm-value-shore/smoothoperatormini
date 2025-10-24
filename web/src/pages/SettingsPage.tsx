@@ -15,9 +15,13 @@ export function SettingsPage() {
     setIsLoading(true)
 
     try {
+      const sessionId = localStorage.getItem('session_id')
       const response = await fetch(getApiUrl('/set-key'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-ID': sessionId || '',
+        },
         credentials: 'include',
         body: JSON.stringify({ api_key: apiKey }),
       })

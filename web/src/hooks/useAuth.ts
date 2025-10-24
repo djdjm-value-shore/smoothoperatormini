@@ -9,7 +9,11 @@ export function useAuth() {
 
   const checkAuth = async () => {
     try {
+      const sessionId = localStorage.getItem('session_id')
       const response = await fetch(getApiUrl('/session-status'), {
+        headers: {
+          'X-Session-ID': sessionId || '',
+        },
         credentials: 'include',
       })
 

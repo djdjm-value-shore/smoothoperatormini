@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Cookie, Depends, Header, HTTPException, Response, status
 from pydantic import BaseModel, Field
 
 from app.config import settings
@@ -37,10 +37,15 @@ class AuthResponse(BaseModel):
 
 
 def get_session_cookie(
-    session_id: Annotated[str | None, Cookie()] = None
+    session_id: Annotated[str | None, Cookie()] = None,
+    x_session_id: Annotated[str | None, Header()] = None,
 ) -> str | None:
-    """Dependency to extract session ID from cookie."""
-    return session_id
+    """Dependency to extract session ID from cookie or header.
+
+    Fallback to X-Session-ID header for cross-domain requests
+    where cookies may be blocked by browser.
+    """
+    return session_id or x_session_id
 
 
 def get_session(
