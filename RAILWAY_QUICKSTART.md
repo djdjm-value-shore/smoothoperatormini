@@ -128,7 +128,7 @@ Railway auto-detects settings from Dockerfile, but you can override:
 |--------------|-------|-------|
 | `APP_PASSCODE` | Your secret passcode | Used for login authentication |
 | `SESSION_SECRET` | 64-char random string | Generate with command below |
-| `CORS_ORIGINS` | `https://your-web-domain.up.railway.app` | **Use your actual web URL from Step 3.4** |
+| `ALLOWED_ORIGINS` | `https://your-web-domain.up.railway.app` | **Use your actual web URL from Step 3.4** |
 | `LOG_LEVEL` | `INFO` | Or `DEBUG` for verbose logs |
 
 **Generate SESSION_SECRET:**
@@ -142,7 +142,7 @@ python -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
 APP_PASSCODE=your_secret_passcode_here
 SESSION_SECRET=generated_64_char_string_here
-CORS_ORIGINS=https://your-web-domain.up.railway.app
+ALLOWED_ORIGINS=https://your-web-domain.up.railway.app
 LOG_LEVEL=INFO
 ```
 3. Click **"Update Variables"**
@@ -370,7 +370,7 @@ Update the static HTML demo file:
 
 **Fix:**
 1. API service → Variables
-2. Check `CORS_ORIGINS` exactly matches web domain:
+2. Check `ALLOWED_ORIGINS` exactly matches web domain:
    - ✅ `https://web-production-abc.up.railway.app`
    - ❌ `http://web-production-abc.up.railway.app` (missing https)
    - ❌ `https://web-production-abc.up.railway.app/` (trailing slash)
