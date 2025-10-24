@@ -93,12 +93,13 @@ async def login(request: LoginRequest, response: Response):
     session.passcode_verified = True
 
     # Set session cookie
+    # Use samesite="none" for cross-domain cookies (API and Web on different Railway domains)
     response.set_cookie(
         key="session_id",
         value=session.session_id,
         httponly=True,
-        secure=True,  # HTTPS only in production
-        samesite="lax",
+        secure=True,  # HTTPS required when samesite="none"
+        samesite="none",  # Allow cross-domain cookies
         max_age=settings.session_ttl,
     )
 
