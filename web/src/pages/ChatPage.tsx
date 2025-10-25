@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react'
-import { Send, Loader2, User, Bot, Wrench } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { Send } from 'lucide-react'
 import { getFullApiUrl } from '../config'
 import type { ChatMessage } from '../types'
 
@@ -109,7 +109,7 @@ export function ChatPage() {
                 const handoffMessage: ChatMessage = {
                   id: Date.now().toString() + '-handoff',
                   role: 'system',
-                  content: eventData.message,
+                  content: `→ ${eventData.agent}`,
                   timestamp: Date.now(),
                 }
 
@@ -125,28 +125,21 @@ export function ChatPage() {
                 }
                 messageAdded = false
               } else if (currentEventType === 'tool_call') {
-                // Tool being called
+                // Tool being called - show minimally
                 const toolMessage: ChatMessage = {
                   id: Date.now().toString() + '-tool',
                   role: 'system',
-                  content: `🔧 Calling ${eventData.tool}(${JSON.stringify(eventData.arguments)})`,
+                  content: `${eventData.tool}()`,
                   timestamp: Date.now(),
                 }
                 setMessages((prev) => [...prev, toolMessage])
               } else if (currentEventType === 'tool_result') {
-                // Tool result
-                const resultMessage: ChatMessage = {
-                  id: Date.now().toString() + '-result',
-                  role: 'system',
-                  content: `✓ ${eventData.tool} completed: ${JSON.stringify(eventData.result).slice(0, 100)}`,
-                  timestamp: Date.now(),
-                }
-                setMessages((prev) => [...prev, resultMessage])
+                // Skip tool results for cleaner UI
               } else if (currentEventType === 'error') {
                 const errorMessage: ChatMessage = {
                   id: Date.now().toString() + '-error',
                   role: 'system',
-                  content: `❌ Error: ${eventData.error}`,
+                  content: `Error: ${eventData.error}`,
                   timestamp: Date.now(),
                 }
                 setMessages((prev) => [...prev, errorMessage])
@@ -178,115 +171,94 @@ export function ChatPage() {
     }
   }
 
-  const getMessageIcon = (message: ChatMessage) => {
-    if (message.role === 'user') {
-      return <User className="w-5 h-5" />
-    } else if (message.role === 'system') {
-      return <Wrench className="w-5 h-5" />
-    } else {
-      return <Bot className="w-5 h-5" />
-    }
-  }
-
-  const getMessageClasses = (message: ChatMessage) => {
-    if (message.role === 'user') {
-      return 'chat-end'
-    } else {
-      return 'chat-start'
-    }
-  }
-
-  const getBubbleClasses = (message: ChatMessage) => {
-    if (message.role === 'user') {
-      return 'chat-bubble-primary'
-    } else if (message.role === 'system') {
-      return 'chat-bubble-info'
-    } else {
-      return 'chat-bubble-secondary'
-    }
-  }
-
   return (
-    <div className="flex flex-col h-screen">
-      {/* Header */}
-      <div className="navbar bg-base-100 shadow-lg">
-        <div className="flex-1">
-          <h1 className="text-xl font-bold">SmoothOperator Chat</h1>
-        </div>
-        <div className="flex-none">
-          <div className="badge badge-outline badge-sm">
-            Agent: {currentAgent}
-          </div>
+    <div className="flex flex-col h-screen bg-white">
+      {/* Minimalist header */}
+      <div className="border-b border-gray-200 bg-white">
+        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+          <h1 className="text-lg font-medium text-gray-900">SmoothOperator</h1>
+          <span className="text-xs text-gray-500">{currentAgent}</span>
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 && (
-          <div className="text-center text-base-content/60 mt-20">
-            <Bot className="w-16 h-16 mx-auto mb-4 opacity-50" />
-            <p className="text-lg">Start a conversation!</p>
-            <p className="text-sm mt-2">
-              Try: "Save a note titled 'test' with content 'hello world'"
-            </p>
-          </div>
-        )}
-
-        {messages.map((message) => (
-          <div key={message.id} className={`chat ${getMessageClasses(message)}`}>
-            <div className="chat-image avatar">
-              <div className="w-10 rounded-full bg-base-300 flex items-center justify-center">
-                {getMessageIcon(message)}
-              </div>
+      {/* Messages area */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-3xl mx-auto px-4 py-8">
+          {messages.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-400 text-sm">How can I help you today?</p>
             </div>
-            <div className={`chat-bubble ${getBubbleClasses(message)}`}>
-              {message.agent && (
-                <div className="text-xs opacity-70 mb-1">
-                  {message.agent}
+          )}
+
+          <div className="space-y-6">
+            {messages.map((message) => (
+              <div key={message.id}>
+                {message.role === 'user' && (
+                  <div className="flex justify-end">
+                    <div className="bg-gray-100 rounded-2xl px-5 py-3 max-w-[80%]">
+                      <p className="text-gray-900 text-[15px] leading-relaxed whitespace-pre-wrap">
+                        {message.content}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {message.role === 'assistant' && (
+                  <div className="flex justify-start">
+                    <div className="max-w-[80%]">
+                      <p className="text-gray-900 text-[15px] leading-relaxed whitespace-pre-wrap">
+                        {message.content}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {message.role === 'system' && (
+                  <div className="flex justify-center">
+                    <div className="text-xs text-gray-400 bg-gray-50 px-3 py-1 rounded-full">
+                      {message.content}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {isStreaming && (
+              <div className="flex justify-start">
+                <div className="flex items-center space-x-2">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
                 </div>
-              )}
-              <div className="whitespace-pre-wrap">{message.content}</div>
-            </div>
-          </div>
-        ))}
-
-        {isStreaming && (
-          <div className="chat chat-start">
-            <div className="chat-image avatar">
-              <div className="w-10 rounded-full bg-base-300 flex items-center justify-center">
-                <Loader2 className="w-5 h-5 animate-spin" />
               </div>
-            </div>
-            <div className="chat-bubble chat-bubble-secondary">
-              <span className="loading loading-dots"></span>
-            </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
-      {/* Input */}
-      <div className="border-t border-base-300 bg-base-100 p-4">
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <input
-            type="text"
-            placeholder="Type your message..."
-            className="input input-bordered flex-1"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            disabled={isStreaming}
-          />
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={isStreaming || !input.trim()}
-          >
-            {isStreaming ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Send className="w-5 h-5" />
-            )}
-          </button>
-        </form>
+      {/* Input area */}
+      <div className="border-t border-gray-200 bg-white">
+        <div className="max-w-3xl mx-auto px-4 py-4">
+          <form onSubmit={handleSubmit} className="relative">
+            <input
+              type="text"
+              placeholder="Message SmoothOperator..."
+              className="w-full px-4 py-3 pr-12 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent text-[15px] bg-white"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              disabled={isStreaming}
+            />
+            <button
+              type="submit"
+              disabled={isStreaming || !input.trim()}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-gray-900 text-white disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-gray-800 transition-colors"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   )
