@@ -9,30 +9,12 @@ export function ChatPage() {
   const [isStreaming, setIsStreaming] = useState(false)
   const [currentAgent, setCurrentAgent] = useState<string>('concierge')
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const messagesContainerRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
-
-  const isNearBottom = () => {
-    const container = messagesContainerRef.current
-    if (!container) return true
-
-    const threshold = 150
-    const position = container.scrollTop + container.clientHeight
-    const height = container.scrollHeight
-
-    return position >= height - threshold
-  }
-
   useEffect(() => {
-    // Only auto-scroll if user is near bottom (not reading history)
-    if (isNearBottom()) {
-      scrollToBottom()
-    }
-  }, [messages])
+    // Scroll to bottom only on initial page load
+    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -245,7 +227,7 @@ export function ChatPage() {
       </div>
 
       {/* Messages */}
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
           <div className="text-center text-base-content/60 mt-20">
             <Bot className="w-16 h-16 mx-auto mb-4 opacity-50" />
