@@ -8,13 +8,7 @@ export function ChatPage() {
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [currentAgent, setCurrentAgent] = useState<string>('concierge')
-  const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
-
-  useEffect(() => {
-    // Scroll to bottom only on initial page load
-    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
-  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -268,8 +262,6 @@ export function ChatPage() {
             </div>
           </div>
         )}
-
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
