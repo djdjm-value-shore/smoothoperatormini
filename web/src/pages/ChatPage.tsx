@@ -25,11 +25,9 @@ export function ChatPage() {
     setInput('')
     setIsStreaming(true)
 
-    // Create abort controller for this request
     abortControllerRef.current = new AbortController()
 
     try {
-      // Use apiRequest to include session ID header
       const sessionId = localStorage.getItem('session_id')
       const response = await fetch(getFullApiUrl('/api/chatkit'), {
         method: 'POST',
@@ -74,21 +72,18 @@ export function ChatPage() {
         for (const line of lines) {
           if (!line.trim()) continue
 
-          // Parse SSE event type
           if (line.startsWith('event: ')) {
             currentEventType = line.slice(7).trim()
             continue
           }
 
-          // Parse SSE data
           if (line.startsWith('data: ')) {
-            const data = line.slice(6) // Remove 'data: ' prefix
+            const data = line.slice(6)
 
             try {
               const eventData = JSON.parse(data)
 
               if (currentEventType === 'delta') {
-                // Text streaming
                 currentMessage.content += eventData.content
                 currentMessage.agent = eventData.agent
 
@@ -103,7 +98,6 @@ export function ChatPage() {
                   )
                 }
               } else if (currentEventType === 'agent_handoff') {
-                // Visible handoff
                 setCurrentAgent(eventData.agent)
 
                 const handoffMessage: ChatMessage = {
@@ -115,7 +109,6 @@ export function ChatPage() {
 
                 setMessages((prev) => [...prev, handoffMessage])
 
-                // Start new message for new agent
                 currentMessage = {
                   id: Date.now().toString() + '-new',
                   role: 'assistant',
@@ -125,26 +118,29 @@ export function ChatPage() {
                 }
                 messageAdded = false
               } else if (currentEventType === 'tool_call') {
-                // Tool being called - show minimally
                 const toolMessage: ChatMessage = {
                   id: Date.now().toString() + '-tool',
                   role: 'system',
-                  content: `${eventData.tool}()`,
+                  content: `🔧 ${eventData.tool}()`,
                   timestamp: Date.now(),
                 }
                 setMessages((prev) => [...prev, toolMessage])
               } else if (currentEventType === 'tool_result') {
-                // Skip tool results for cleaner UI
+                const resultMessage: ChatMessage = {
+                  id: Date.now().toString() + '-result',
+                  role: 'system',
+                  content: `✓ ${eventData.tool} completed`,
+                  timestamp: Date.now(),
+                }
+                setMessages((prev) => [...prev, resultMessage])
               } else if (currentEventType === 'error') {
                 const errorMessage: ChatMessage = {
                   id: Date.now().toString() + '-error',
                   role: 'system',
-                  content: `Error: ${eventData.error}`,
+                  content: `❌ Error: ${eventData.error}`,
                   timestamp: Date.now(),
                 }
                 setMessages((prev) => [...prev, errorMessage])
-              } else if (currentEventType === 'done') {
-                // Stream complete
               }
             } catch (err) {
               console.error('Failed to parse SSE event:', err)
@@ -154,7 +150,7 @@ export function ChatPage() {
       }
     } catch (err: any) {
       if (err.name === 'AbortError') {
-        // Request was aborted by user
+        // Request aborted
       } else {
         console.error('Chat error:', err)
         const errorMessage: ChatMessage = {
@@ -172,31 +168,33 @@ export function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-white">
-      {/* Minimalist header */}
-      <div className="border-b border-gray-200 bg-white">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="text-lg font-medium text-gray-900">SmoothOperator</h1>
-          <span className="text-xs text-gray-500">{currentAgent}</span>
+    <div className="flex flex-col h-screen bg-gradient-to-b from-slate-50 to-blue-50">
+      {/* Header */}
+      <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/60 shadow-sm">
+        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+          <h1 className="text-xl font-semibold text-slate-800">SmoothOperator</h1>
+          <span className="text-sm text-slate-500 bg-slate-100/60 px-3 py-1 rounded-full">
+            {currentAgent}
+          </span>
         </div>
       </div>
 
-      {/* Messages area */}
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto px-6 py-6">
           {messages.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-400 text-sm">How can I help you today?</p>
+            <div className="text-center py-16">
+              <p className="text-slate-400 text-sm">How can I help you today?</p>
             </div>
           )}
 
-          <div className="space-y-6">
+          <div className="space-y-4">
             {messages.map((message) => (
               <div key={message.id}>
                 {message.role === 'user' && (
                   <div className="flex justify-end">
-                    <div className="bg-gray-100 rounded-2xl px-5 py-3 max-w-[80%]">
-                      <p className="text-gray-900 text-[15px] leading-relaxed whitespace-pre-wrap">
+                    <div className="bg-blue-100/70 rounded-2xl px-5 py-3 max-w-[75%] shadow-sm">
+                      <p className="text-slate-800 text-sm leading-relaxed whitespace-pre-wrap">
                         {message.content}
                       </p>
                     </div>
@@ -205,8 +203,8 @@ export function ChatPage() {
 
                 {message.role === 'assistant' && (
                   <div className="flex justify-start">
-                    <div className="max-w-[80%]">
-                      <p className="text-gray-900 text-[15px] leading-relaxed whitespace-pre-wrap">
+                    <div className="bg-white/90 rounded-2xl px-5 py-3 max-w-[75%] shadow-sm border border-slate-200/60">
+                      <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
                         {message.content}
                       </p>
                     </div>
@@ -215,7 +213,7 @@ export function ChatPage() {
 
                 {message.role === 'system' && (
                   <div className="flex justify-center">
-                    <div className="text-xs text-gray-400 bg-gray-50 px-3 py-1 rounded-full">
+                    <div className="text-xs text-slate-500 bg-slate-100/50 px-4 py-1.5 rounded-full border border-slate-200/40">
                       {message.content}
                     </div>
                   </div>
@@ -225,11 +223,11 @@ export function ChatPage() {
 
             {isStreaming && (
               <div className="flex justify-start">
-                <div className="flex items-center space-x-2">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                <div className="bg-white/90 rounded-2xl px-5 py-3 shadow-sm border border-slate-200/60">
+                  <div className="flex space-x-1.5">
+                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                   </div>
                 </div>
               </div>
@@ -238,14 +236,14 @@ export function ChatPage() {
         </div>
       </div>
 
-      {/* Input area */}
-      <div className="border-t border-gray-200 bg-white">
-        <div className="max-w-3xl mx-auto px-4 py-4">
+      {/* Input */}
+      <div className="bg-white/80 backdrop-blur-sm border-t border-slate-200/60 shadow-sm">
+        <div className="max-w-4xl mx-auto px-6 py-5">
           <form onSubmit={handleSubmit} className="relative">
             <input
               type="text"
-              placeholder="Message SmoothOperator..."
-              className="w-full px-4 py-3 pr-12 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent text-[15px] bg-white"
+              placeholder="Type your message..."
+              className="w-full px-5 py-3.5 pr-14 rounded-2xl border border-slate-300/60 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 text-sm bg-white shadow-sm placeholder:text-slate-400"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={isStreaming}
@@ -253,7 +251,7 @@ export function ChatPage() {
             <button
               type="submit"
               disabled={isStreaming || !input.trim()}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-gray-900 text-white disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-gray-800 transition-colors"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 rounded-xl bg-blue-500 text-white disabled:bg-slate-300 disabled:cursor-not-allowed hover:bg-blue-600 transition-colors shadow-sm"
             >
               <Send className="w-4 h-4" />
             </button>
