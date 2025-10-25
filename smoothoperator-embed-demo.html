@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmoothOperator</title>
+    <title>SmoothOperator Embed Demo</title>
     <style>
         * {
             margin: 0;
@@ -12,62 +12,46 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(to bottom, #f8fafc, #e0f2fe);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-        }
-
-        .header {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-            padding: 16px 24px;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-        }
-
-        .header-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
             align-items: center;
-            justify-content: space-between;
-        }
-
-        .logo {
-            font-size: 20px;
-            font-weight: 600;
-            color: #1e293b;
-        }
-
-        .badge {
-            background: rgba(226, 232, 240, 0.6);
-            color: #64748b;
-            padding: 6px 14px;
-            border-radius: 16px;
-            font-size: 13px;
-            font-weight: 500;
+            justify-content: center;
+            padding: 20px;
         }
 
         .container {
-            flex: 1;
             max-width: 1200px;
             width: 100%;
-            margin: 0 auto;
-            padding: 32px 24px;
-            display: flex;
-            flex-direction: column;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
         }
 
         .chat-container {
-            flex: 1;
-            background: rgba(255, 255, 255, 0.9);
-            border: 1px solid rgba(226, 232, 240, 0.6);
-            border-radius: 24px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-            min-height: 650px;
+            height: 700px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .chat-container iframe {
@@ -77,45 +61,106 @@
             display: block;
         }
 
-        .footer {
-            text-align: center;
-            padding: 24px;
-            color: #94a3b8;
-            font-size: 13px;
+        .instructions {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+            color: white;
+        }
+
+        .instructions h2 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+
+        .instructions code {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-top: 10px;
         }
 
         @media (max-width: 768px) {
-            .container {
-                padding: 16px;
+            .header h1 {
+                font-size: 2rem;
             }
 
             .chat-container {
-                min-height: 500px;
-                border-radius: 20px;
+                height: 600px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="header-content">
-            <div class="logo">SmoothOperator</div>
-            <div class="badge">Demo</div>
-        </div>
-    </div>
-
     <div class="container">
+        <div class="header">
+            <h1>🤖 SmoothOperator</h1>
+            <p>Multi-Agent Chat Interface Demo</p>
+            <div class="badge">✨ Embeddable Widget</div>
+        </div>
+
         <div class="chat-container">
+            <!--
+                IMPORTANT: Replace WEB_DOMAIN with your actual Railway web URL
+                Example: https://your-smoothoperator-web.up.railway.app
+            -->
             <iframe
                 src="https://web-production-4a905.up.railway.app/chat?embed=1"
                 allow="clipboard-write"
                 title="SmoothOperator Chat"
             ></iframe>
         </div>
-    </div>
 
-    <div class="footer">
-        Multi-agent chat interface
+        <div class="instructions">
+            <h2>📋 How to Use</h2>
+            <ol>
+                <li>Replace <code>WEB_DOMAIN</code> in the iframe src with your Railway web URL</li>
+                <li>Double-click this file to open in your browser</li>
+                <li>The chat will load with your deployed SmoothOperator instance</li>
+                <li>Try the happy path:
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>Login with passcode</li>
+                        <li>Set your OpenAI API key</li>
+                        <li>Send: "Save a note titled 'test' with content 'hello world'"</li>
+                        <li>Observe visible handoff: Concierge → Archivist</li>
+                        <li>Send: "List my notes"</li>
+                    </ul>
+                </li>
+            </ol>
+
+            <h2 style="margin-top: 25px;">🔗 Deployment URLs</h2>
+            <p style="margin-top: 10px; line-height: 1.6;">
+                <strong>Web:</strong> <code>https://your-web.up.railway.app</code><br>
+                <strong>API:</strong> <code>https://your-api.up.railway.app</code>
+            </p>
+
+            <h2 style="margin-top: 25px;">🎯 Features Demonstrated</h2>
+            <ul style="margin-left: 20px; line-height: 1.8; margin-top: 10px;">
+                <li>✅ iframe embedding (frame-ancestors *)</li>
+                <li>✅ Two-agent system (Concierge + Archivist)</li>
+                <li>✅ Visible agent handoffs in stream</li>
+                <li>✅ MCP tool usage (save_note, get_note, list_titles)</li>
+                <li>✅ SSE streaming for real-time chat</li>
+            </ul>
+        </div>
     </div>
 </body>
 </html>

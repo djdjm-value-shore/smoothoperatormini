@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react'
-import { Send } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Send, Loader2, User, Bot, Wrench } from 'lucide-react'
 import { getFullApiUrl } from '../config'
 import type { ChatMessage } from '../types'
 
@@ -25,9 +25,11 @@ export function ChatPage() {
     setInput('')
     setIsStreaming(true)
 
+    // Create abort controller for this request
     abortControllerRef.current = new AbortController()
 
     try {
+      // Use apiRequest to include session ID header
       const sessionId = localStorage.getItem('session_id')
       const response = await fetch(getFullApiUrl('/api/chatkit'), {
         method: 'POST',
@@ -72,18 +74,21 @@ export function ChatPage() {
         for (const line of lines) {
           if (!line.trim()) continue
 
+          // Parse SSE event type
           if (line.startsWith('event: ')) {
             currentEventType = line.slice(7).trim()
             continue
           }
 
+          // Parse SSE data
           if (line.startsWith('data: ')) {
-            const data = line.slice(6)
+            const data = line.slice(6) // Remove 'data: ' prefix
 
             try {
               const eventData = JSON.parse(data)
 
               if (currentEventType === 'delta') {
+                // Text streaming
                 currentMessage.content += eventData.content
                 currentMessage.agent = eventData.agent
 
@@ -98,17 +103,19 @@ export function ChatPage() {
                   )
                 }
               } else if (currentEventType === 'agent_handoff') {
+                // Visible handoff
                 setCurrentAgent(eventData.agent)
 
                 const handoffMessage: ChatMessage = {
                   id: Date.now().toString() + '-handoff',
                   role: 'system',
-                  content: `→ ${eventData.agent}`,
+                  content: eventData.message,
                   timestamp: Date.now(),
                 }
 
                 setMessages((prev) => [...prev, handoffMessage])
 
+                // Start new message for new agent
                 currentMessage = {
                   id: Date.now().toString() + '-new',
                   role: 'assistant',
@@ -118,18 +125,20 @@ export function ChatPage() {
                 }
                 messageAdded = false
               } else if (currentEventType === 'tool_call') {
+                // Tool being called
                 const toolMessage: ChatMessage = {
                   id: Date.now().toString() + '-tool',
                   role: 'system',
-                  content: `🔧 ${eventData.tool}()`,
+                  content: `🔧 Calling ${eventData.tool}(${JSON.stringify(eventData.arguments)})`,
                   timestamp: Date.now(),
                 }
                 setMessages((prev) => [...prev, toolMessage])
               } else if (currentEventType === 'tool_result') {
+                // Tool result
                 const resultMessage: ChatMessage = {
                   id: Date.now().toString() + '-result',
                   role: 'system',
-                  content: `✓ ${eventData.tool} completed`,
+                  content: `✓ ${eventData.tool} completed: ${JSON.stringify(eventData.result).slice(0, 100)}`,
                   timestamp: Date.now(),
                 }
                 setMessages((prev) => [...prev, resultMessage])
@@ -141,6 +150,8 @@ export function ChatPage() {
                   timestamp: Date.now(),
                 }
                 setMessages((prev) => [...prev, errorMessage])
+              } else if (currentEventType === 'done') {
+                // Stream complete
               }
             } catch (err) {
               console.error('Failed to parse SSE event:', err)
@@ -150,7 +161,7 @@ export function ChatPage() {
       }
     } catch (err: any) {
       if (err.name === 'AbortError') {
-        // Request aborted
+        // Request was aborted by user
       } else {
         console.error('Chat error:', err)
         const errorMessage: ChatMessage = {
@@ -167,96 +178,115 @@ export function ChatPage() {
     }
   }
 
+  const getMessageIcon = (message: ChatMessage) => {
+    if (message.role === 'user') {
+      return <User className="w-5 h-5" />
+    } else if (message.role === 'system') {
+      return <Wrench className="w-5 h-5" />
+    } else {
+      return <Bot className="w-5 h-5" />
+    }
+  }
+
+  const getMessageClasses = (message: ChatMessage) => {
+    if (message.role === 'user') {
+      return 'chat-end'
+    } else {
+      return 'chat-start'
+    }
+  }
+
+  const getBubbleClasses = (message: ChatMessage) => {
+    if (message.role === 'user') {
+      return 'chat-bubble-primary'
+    } else if (message.role === 'system') {
+      return 'chat-bubble-info'
+    } else {
+      return 'chat-bubble-secondary'
+    }
+  }
+
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-b from-slate-50 to-blue-50">
+    <div className="flex flex-col h-screen">
       {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/60 shadow-sm">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-slate-800">SmoothOperator</h1>
-          <span className="text-sm text-slate-500 bg-slate-100/60 px-3 py-1 rounded-full">
-            {currentAgent}
-          </span>
+      <div className="navbar bg-base-100 shadow-lg">
+        <div className="flex-1">
+          <h1 className="text-xl font-bold">SmoothOperator Chat</h1>
         </div>
-      </div>
-
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto px-6 py-6">
-          {messages.length === 0 && (
-            <div className="text-center py-16">
-              <p className="text-slate-400 text-sm">How can I help you today?</p>
-            </div>
-          )}
-
-          <div className="space-y-4">
-            {messages.map((message) => (
-              <div key={message.id}>
-                {message.role === 'user' && (
-                  <div className="flex justify-end">
-                    <div className="bg-blue-100/70 rounded-2xl px-5 py-3 max-w-[75%] shadow-sm">
-                      <p className="text-slate-800 text-sm leading-relaxed whitespace-pre-wrap">
-                        {message.content}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {message.role === 'assistant' && (
-                  <div className="flex justify-start">
-                    <div className="bg-white/90 rounded-2xl px-5 py-3 max-w-[75%] shadow-sm border border-slate-200/60">
-                      <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">
-                        {message.content}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {message.role === 'system' && (
-                  <div className="flex justify-center">
-                    <div className="text-xs text-slate-500 bg-slate-100/50 px-4 py-1.5 rounded-full border border-slate-200/40">
-                      {message.content}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {isStreaming && (
-              <div className="flex justify-start">
-                <div className="bg-white/90 rounded-2xl px-5 py-3 shadow-sm border border-slate-200/60">
-                  <div className="flex space-x-1.5">
-                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                  </div>
-                </div>
-              </div>
-            )}
+        <div className="flex-none">
+          <div className="badge badge-outline badge-sm">
+            Agent: {currentAgent}
           </div>
         </div>
       </div>
 
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.length === 0 && (
+          <div className="text-center text-base-content/60 mt-20">
+            <Bot className="w-16 h-16 mx-auto mb-4 opacity-50" />
+            <p className="text-lg">Start a conversation!</p>
+            <p className="text-sm mt-2">
+              Try: "Save a note titled 'test' with content 'hello world'"
+            </p>
+          </div>
+        )}
+
+        {messages.map((message) => (
+          <div key={message.id} className={`chat ${getMessageClasses(message)}`}>
+            <div className="chat-image avatar">
+              <div className="w-10 rounded-full bg-base-300 flex items-center justify-center">
+                {getMessageIcon(message)}
+              </div>
+            </div>
+            <div className={`chat-bubble ${getBubbleClasses(message)}`}>
+              {message.agent && (
+                <div className="text-xs opacity-70 mb-1">
+                  {message.agent}
+                </div>
+              )}
+              <div className="whitespace-pre-wrap">{message.content}</div>
+            </div>
+          </div>
+        ))}
+
+        {isStreaming && (
+          <div className="chat chat-start">
+            <div className="chat-image avatar">
+              <div className="w-10 rounded-full bg-base-300 flex items-center justify-center">
+                <Loader2 className="w-5 h-5 animate-spin" />
+              </div>
+            </div>
+            <div className="chat-bubble chat-bubble-secondary">
+              <span className="loading loading-dots"></span>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Input */}
-      <div className="bg-white/80 backdrop-blur-sm border-t border-slate-200/60 shadow-sm">
-        <div className="max-w-4xl mx-auto px-6 py-5">
-          <form onSubmit={handleSubmit} className="relative">
-            <input
-              type="text"
-              placeholder="Type your message..."
-              className="w-full px-5 py-3.5 pr-14 rounded-2xl border border-slate-300/60 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 text-sm bg-white shadow-sm placeholder:text-slate-400"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              disabled={isStreaming}
-            />
-            <button
-              type="submit"
-              disabled={isStreaming || !input.trim()}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 rounded-xl bg-blue-500 text-white disabled:bg-slate-300 disabled:cursor-not-allowed hover:bg-blue-600 transition-colors shadow-sm"
-            >
-              <Send className="w-4 h-4" />
-            </button>
-          </form>
-        </div>
+      <div className="border-t border-base-300 bg-base-100 p-4">
+        <form onSubmit={handleSubmit} className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Type your message..."
+            className="input input-bordered flex-1"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            disabled={isStreaming}
+          />
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={isStreaming || !input.trim()}
+          >
+            {isStreaming ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Send className="w-5 h-5" />
+            )}
+          </button>
+        </form>
       </div>
     </div>
   )
